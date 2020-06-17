@@ -31,33 +31,6 @@ np.random.seed(config['random_seed'])
 mnist = tf.keras.datasets.mnist.load_data(path="mnist.npz")
 model = Model()
 
-# TODO GET IT WORKING FOR SVM????
-# Set up adversary
-
-# attack = LinfPGDAttack(model, 
-#                        config['epsilon'],
-#                        config['k'],
-#                        config['a'],
-#                        config['random_start'],
-#                        config['loss_func'])
-
-# Setting up the Tensorboard and checkpoint outputs
-# SVM won't need a checkpoint just a final result?
-
-# model_dir = config['model_dir']
-# if not os.path.exists(model_dir):
-#   os.makedirs(model_dir)
-
-# We add accuracy and xent twice so we can easily make three types of
-# comparisons in Tensorboard:
-# - train vs eval (for a single run)
-# - train of different runs
-# - eval of different runs
-
-# SVM case what variables do we need?
-
-# Specific to test dataset
-# Implementation built from: https://medium.com/cs-note/tensorflow-ch4-support-vector-machines-c9ad18878c76
 iris = datasets.load_iris()
 x_vals = np.array([[x[0],x[3]] for x in iris.data])
 y_vals = np.array([1 if y==0 else -1 for y in iris.target])

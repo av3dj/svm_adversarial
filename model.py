@@ -15,21 +15,23 @@ class Model(object):
         # Implementation built from:
         # https://github.com/nfmcclure/tensorflow_cookbook/blob/master/04_Support_Vector_Machines/04_Working_with_Kernels/04_svm_kernels.py
 
-        self.x_input = tf.placeholder(shape=[None, 2], dtype=tf.float32)
+        self.x_input = tf.placeholder(shape=[None, 784], dtype=tf.float32)
         self.y_input = tf.placeholder(shape=[None, 1], dtype=tf.float32)
-        self.prediction_grid = tf.placeholder(shape=[None, 2], dtype=tf.float32)
-        self.b = tf.Variable(tf.random_normal(shape=[1,batch_size]))
-        self.gamma = tf.constant(-50.0)
+        self.prediction_grid = tf.placeholder(shape=[None, 784], dtype=tf.float32)
+        # self.b = tf.Variable(tf.random_normal(shape=[1,batch_size]))
+        self.b = tf.Variable(tf.zeros(shape=[1,batch_size]))
+        self.gamma = tf.constant(1, dtype=tf.float32)
+        half = tf.constant(0.1, dtype=tf.float32)
 
         self.my_kernel = Model._linear_kernel(self.x_input) if kernel_name == "linear" else Model._gaussian_kernel(self.x_input, self.gamma)
 
         # Dual Problem
         self.model_output = tf.matmul(self.b, self.my_kernel)
-        first_term = tf.reduce_sum(self.b)
-        b_vec_cross = tf.matmul(tf.transpose(self.b), self.b)
-        y_target_cross = tf.matmul(self.y_input, tf.transpose(self.y_input))
-        second_term = tf.reduce_sum(tf.multiply(self.my_kernel, tf.multiply(b_vec_cross,y_target_cross)))
-        self.loss = tf.negative(tf.subtract(first_term, second_term))
+        self.first_term = tf.reduce_sum(self.b)
+        self.b_vec_cross = tf.matmul(tf.transpose(self.b), self.b)
+        self.y_target_cross = tf.matmul(self.y_input, tf.transpose(self.y_input))
+        self.second_term = tf.multiply(half, tf.reduce_sum(tf.multiply(self.my_kernel, tf.multiply(self.b_vec_cross, self.y_target_cross))))
+        self.loss = tf.negative(tf.subtract(self.first_term, self.second_term))
 
         self.pred_kernel = Model._linear_pred_kernel(self.x_input, self.prediction_grid) if kernel_name == "linear" else Model._gaussian_pred_kernel(self.x_input, self.prediction_grid, self.gamma)
 

@@ -14,6 +14,7 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 import numpy as np
 import sklearn.datasets as datasets
+from scipy import stats
 
 import matplotlib.pyplot as plt
 
@@ -23,11 +24,61 @@ from model import Model
 with open('config.json') as config_file:
     config = json.load(config_file)
 
+# Return mnist data with only 1's and 7's as tensor
+def prepare_mnist():
+
+  mnist = tf.keras.datasets.mnist.load_data(path="mnist.npz")
+
+  mnist_x_train = mnist[0][0]
+  mnist_y_train = mnist[0][1]
+  mnist_x_test = mnist[1][0]
+  mnist_y_test= mnist[1][1]
+
+  # Extract only ones and sevens
+
+  indices_1_train = mnist_y_train == 1
+  indices_1_test = mnist_y_test == 1
+  indices_7_train = mnist_y_train == 7
+  indices_7_test = mnist_y_test == 7
+
+  mnist_x_train_1 = mnist_x_train[indices_1_train]
+  mnist_y_train_1 = mnist_y_train[indices_1_train]
+  mnist_x_test_1 = mnist_x_test[indices_1_test]
+  mnist_y_test_1 = mnist_y_test[indices_1_test]
+
+  mnist_x_train_7 = mnist_x_train[indices_7_train]
+  mnist_y_train_7 = mnist_y_train[indices_7_train]
+  mnist_x_test_7 = mnist_x_test[indices_7_test]
+  mnist_y_test_7 = mnist_y_test[indices_7_test]
+
+  # Combine numpy arrays into one dataset
+
+  mnist_x_train = np.concatenate((mnist_x_train_1, mnist_x_train_7))
+  mnist_y_train = np.concatenate((mnist_y_train_1, mnist_y_train_7))
+  mnist_x_test = np.concatenate((mnist_x_test_1, mnist_x_test_7))
+  mnist_y_test = np.concatenate((mnist_y_test_1, mnist_y_test_7))
+
+  # Flatten x arrays
+
+  mnist_x_train_flatten = np.empty((mnist_x_train.shape[0], 784))
+  for idx, x in enumerate(mnist_x_train):
+    mnist_x_train_flatten[idx] = x.flatten()/255
+
+  mnist_x_test_flatten = np.empty((mnist_x_test.shape[0], 784))
+  for idx, x in enumerate(mnist_x_test):
+    mnist_x_test_flatten[idx] = x.flatten()/255
+
+  # Encode y arrays (1 -> 0 and 7 -> 1)
+
+  mnist_y_train = np.array([1 if y == 7 else -1 for y in mnist_y_train])
+  mnist_y_test = np.array([1 if y == 7 else -1 for y in mnist_y_test])
+
+  return (mnist_x_train_flatten, mnist_y_train, mnist_x_test_flatten, mnist_y_test)
+
 # Setting up training parameters
 tf.set_random_seed(config['random_seed'])
 np.random.seed(config['random_seed'])
 
-# TODO GET IT WORKING FOR SVM????
 # Set up adversary
 
 # attack = LinfPGDAttack(model, 
@@ -55,66 +106,35 @@ np.random.seed(config['random_seed'])
 # Specific to test dataset
 # Implementation built from:
 # https://github.com/nfmcclure/tensorflow_cookbook/blob/master/04_Support_Vector_Machines/04_Working_with_Kernels/04_svm_kernels.py
-(x_vals, y_vals) = datasets.make_circles(n_samples=500, factor=.5,noise=.1)
-y_vals = np.array([1 if y==1 else -1 for y in y_vals])
 
-class1_x = [x[0] for i,x in enumerate(x_vals) if y_vals[i]==1]
-class1_y = [x[1] for i,x in enumerate(x_vals) if y_vals[i]==1]
-class2_x = [x[0] for i,x in enumerate(x_vals) if y_vals[i]==-1]
-class2_y = [x[1] for i,x in enumerate(x_vals) if y_vals[i]==-1]
+mnist = tf.keras.datasets.mnist.load_data(path="mnist.npz")
 
-batch_size = 500
+(mnist_train_x, mnist_train_y, mnist_test_x, mnist_test_y) = prepare_mnist()
+
+x_vals = mnist_train_x
+y_vals = mnist_train_y
+
+batch_size = 2163
 
 svm_model = Model(batch_size)
 
-# x_data = tf.placeholder(shape=[None, 2], dtype=tf.float32)
-# y_target = tf.placeholder(shape=[None, 1], dtype=tf.float32)
-# prediction_grid = tf.placeholder(shape=[None, 2], dtype=tf.float32)
-# b = tf.Variable(tf.random_normal(shape=[1,batch_size]))
-
-# # Linear Kernel
-# my_kernel = tf.matmul(x_data, tf.transpose(x_data))
-
-# # # Gaussian kernel
-# # gamma = tf.constant(-50.0)
-# # dist = tf.reduce_sum(tf.square(x_data), 1)
-# # dist = tf.reshape(dist, [-1,1])
-# # sq_dists = tf.add(tf.subtract(dist, tf.multiply(2., tf.matmul(x_data,tf.transpose(x_data)))), tf.transpose(dist))
-# # my_kernel = tf.exp(tf.multiply(gamma, tf.abs(sq_dists)))
-
-# print(tf.shape(my_kernel))
-# print(tf.shape(b))
-
-# # Dual problem
-# model_output = tf.matmul(b, my_kernel)
-# first_term = tf.reduce_sum(b)
-# b_vec_cross = tf.matmul(tf.transpose(b), b)
-# y_target_cross = tf.matmul(y_target, tf.transpose(y_target))
-# second_term = tf.reduce_sum(tf.multiply(my_kernel, tf.multiply(b_vec_cross,y_target_cross)))
-# loss = tf.negative(tf.subtract(first_term, second_term))
-
-# # Prediction and accuracy function
-
-# # Linear
-# pred_kernel = tf.matmul(x_data, tf.transpose(prediction_grid))
-
-# # # Gaussian
-# # rA = tf.reshape(tf.reduce_sum(tf.square(x_data), 1),[-1,1])
-# # rB = tf.reshape(tf.reduce_sum(tf.square(prediction_grid), 1),[-1,1])
-# # pred_sq_dist = tf.add(tf.subtract(rA, tf.multiply(2., tf.matmul(x_data,tf.transpose(prediction_grid)))), tf.transpose(rB))
-# # pred_kernel = tf.exp(tf.multiply(gamma, tf.abs(pred_sq_dist)))
-
-# prediction_output = tf.matmul(tf.multiply(tf.transpose(y_target),b),pred_kernel)
-# prediction = tf.sign(prediction_output-tf.reduce_mean(prediction_output))
-# accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.squeeze(prediction),tf.squeeze(y_target)), tf.float32))
-
 # Optimizer stuff
-my_opt = tf.train.GradientDescentOptimizer(0.001)
+my_opt = tf.train.GradientDescentOptimizer(learning_rate=0.0001)
+# my_opt = tf.train.AdamOptimizer(learning_rate=0.0001) # initialization of zeros (for b) and learning rate of 0.0001 with gradient clipping at -1 and 1 results in ~96% accuracy
+
+# gvs = my_opt.compute_gradients(svm_model.loss)
+# capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gvs]
+# train_step = my_opt.apply_gradients(capped_gvs)
+
 train_step = my_opt.minimize(svm_model.loss)
 init = tf.initialize_all_variables()
 
 loss_vec = []
 batch_accuracy = []
+
+first_vec = []
+second_vec = []
+Y_7_count = []
 
 X = None
 Y = None
@@ -124,38 +144,95 @@ grid_predictions = []
 sess = tf.Session()
 sess.run(init)
 
-for i in range(2000):
+# # Stochastic 
+# for i in range(len(x_vals)):
+
+#   # Create data
+#   X = np.array(x_vals[i]).reshape(1, 784)
+#   Y = np.transpose(np.array(y_vals[i]).reshape(1, 1))
+
+#   # Train model
+#   sess.run(train_step, feed_dict={svm_model.x_input: X, svm_model.y_input: Y})
+
+  
+#   # Values to print
+#   val = sess.run(svm_model.my_kernel, feed_dict={svm_model.x_input: X})
+#   val_b = sess.run(svm_model.b)
+#   vec_cross = sess.run(svm_model.b_vec_cross, feed_dict={svm_model.b: val_b})
+#   target_cross = sess.run(svm_model.y_target_cross, feed_dict={svm_model.y_input: Y})
+#   first_term = sess.run(svm_model.first_term, feed_dict={svm_model.b: val_b})
+#   second_term = sess.run(svm_model.second_term, feed_dict={svm_model.b: val_b, svm_model.my_kernel: val, svm_model.y_target_cross: target_cross})
+
+
+#   # Storing measures
+#   temp_loss = sess.run(svm_model.loss, feed_dict={svm_model.x_input: X, svm_model.y_input: Y})
+#   loss_vec.append(temp_loss)
+#   acc_temp = sess.run(svm_model.accuracy, feed_dict={svm_model.x_input: X,svm_model.y_input: Y,svm_model.prediction_grid:X})
+#   batch_accuracy.append(acc_temp)
+
+#   first_vec.append(first_term)
+#   second_vec.append(second_term)
+
+#   # if (i+1)%10==0:
+#   # print('Kernel Value = ' + str(val))
+#   print('b val = ' + str(val_b))
+#   # print('b_vec_cross = ' + str(vec_cross))
+#   # print('y_target_cross = ' + str(target_cross))
+#   # print('first_term = ' + str(first_term))
+#   # print('second_term = ' + str(second_term))
+#   print('Loss = ' + str(temp_loss))
+#   print('Accuracy = ' + str(acc_temp))
+#   print('Step #' + str(i+1))
+
+# Batch 
+for i in range(1000):
+
+  # Create batch
   rand_index = np.random.choice(len(x_vals), size=batch_size)
   X = x_vals[rand_index]
   Y = np.transpose([y_vals[rand_index]])
+  Y_7_count.append(list(Y).count(1))
+
+  # Train model
   sess.run(train_step, feed_dict={svm_model.x_input: X, svm_model.y_input: Y})
+
+  
+  # Values to print
+  val = sess.run(svm_model.my_kernel, feed_dict={svm_model.x_input: X})
+  val_b = sess.run(svm_model.b)
+  vec_cross = sess.run(svm_model.b_vec_cross, feed_dict={svm_model.b: val_b})
+  target_cross = sess.run(svm_model.y_target_cross, feed_dict={svm_model.y_input: Y})
+  first_term = sess.run(svm_model.first_term, feed_dict={svm_model.b: val_b})
+  second_term = sess.run(svm_model.second_term, feed_dict={svm_model.b: val_b, svm_model.my_kernel: val, svm_model.y_target_cross: target_cross})
+
+
+  # Storing batch set performance
   temp_loss = sess.run(svm_model.loss, feed_dict={svm_model.x_input: X, svm_model.y_input: Y})
   loss_vec.append(temp_loss)
-  acc_temp = sess.run(svm_model.accuracy, feed_dict={svm_model.x_input: X,svm_model.y_input: Y,svm_model.prediction_grid:X})
+  acc_temp = sess.run(svm_model.accuracy, feed_dict={svm_model.x_input: X, svm_model.y_input: Y, svm_model.prediction_grid: X})
   batch_accuracy.append(acc_temp)
 
-# Create a mesh to plot points in
-x_min, x_max = x_vals[:, 0].min() - 1, x_vals[:, 0].max() + 1
-y_min, y_max = x_vals[:, 1].min() - 1, x_vals[:, 1].max() + 1
-xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02),
-                    np.arange(y_min, y_max, 0.02))
-grid_points = np.c_[xx.ravel(), yy.ravel()]
-[grid_predictions] = sess.run(svm_model.prediction, feed_dict={svm_model.x_input: X,
-                                                  svm_model.y_input: Y,
-                                                  svm_model.prediction_grid: grid_points})
-grid_predictions = grid_predictions.reshape(xx.shape)
+  # # Storing test set performance
+  # temp_loss = sess.run(svm_model.loss, feed_dict={svm_model.x_input: mnist_test_x, svm_model.y_input: np.transpose([mnist_test_y])})
+  # loss_vec.append(temp_loss)
+  # acc_temp = sess.run(svm_model.accuracy, feed_dict={svm_model.x_input: mnist_test_x,svm_model.y_input: np.transpose([mnist_test_y]),svm_model.prediction_grid:mnist_test_x})
+  # batch_accuracy.append(acc_temp)
 
-# Plot points and grid
-plt.contourf(xx, yy, grid_predictions, cmap=plt.cm.Paired, alpha=0.8)
-plt.plot(class1_x, class1_y, 'ro', label='Class 1')
-plt.plot(class2_x, class2_y, 'kx', label='Class -1')
-plt.title('Gaussian SVM Results')
-plt.xlabel('x')
-plt.ylabel('y')
-plt.legend(loc='lower right')
-plt.ylim([-1.5, 1.5])
-plt.xlim([-1.5, 1.5])
-plt.show()
+  first_vec.append(first_term)
+  second_vec.append(second_term)
+
+  # if (i+1)%10==0:
+  # print('Kernel Value = ' + str(val))
+  print('b val = ' + str(val_b))
+  # print('b_vec_cross = ' + str(vec_cross))
+  # print('y_target_cross = ' + str(target_cross))
+  # print('first_term = ' + str(first_term))
+  # print('second_term = ' + str(second_term))
+  print('Loss = ' + str(temp_loss))
+  print('Accuracy = ' + str(acc_temp))
+  print('Step #' + str(i+1))
+
+# print(sum(Y_7_count) / len(Y_7_count))
 
 # Plot batch accuracy
 plt.plot(batch_accuracy, 'k-', label='Accuracy')
@@ -172,20 +249,18 @@ plt.xlabel('Generation')
 plt.ylabel('Loss')
 plt.show()
 
-# Evaluate on new/unseen data points
-# New data points:
-new_points = np.array([(-0.75, -0.75),
-                       (-0.5, -0.5),
-                       (-0.25, -0.25),
-                       (0.25, 0.25),
-                       (0.5, 0.5),
-                       (0.75, 0.75)])
+# Plot first over time
+plt.plot(first_vec, 'k-')
+plt.title('First Term per Generation')
+plt.xlabel('Generation')
+plt.ylabel('First Term')
+plt.show()
 
-[evaluations] = sess.run(svm_model.prediction, feed_dict={svm_model.x_input: x_vals,
-                                                svm_model.y_input: np.transpose([y_vals]),
-                                                svm_model.prediction_grid: new_points})
-
-for ix, p in enumerate(new_points):
-    print('{} : class={}'.format(p, evaluations[ix]))
+# Plot second over time
+plt.plot(second_vec, 'k-')
+plt.title('Second Term per Generation')
+plt.xlabel('Generation')
+plt.ylabel('Second Term')
+plt.show()
 
 sess.close()
