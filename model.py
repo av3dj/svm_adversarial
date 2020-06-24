@@ -11,17 +11,17 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
 class Model(object):
-    def __init__(self, batch_size, kernel_name="linear"):
+    def __init__(self, batch_size, kernel_name="linear", C=1):
+
         # Implementation built from:
         # https://github.com/nfmcclure/tensorflow_cookbook/blob/master/04_Support_Vector_Machines/04_Working_with_Kernels/04_svm_kernels.py
 
         self.x_input = tf.placeholder(shape=[None, 784], dtype=tf.float32)
         self.y_input = tf.placeholder(shape=[None, 1], dtype=tf.float32)
         self.prediction_grid = tf.placeholder(shape=[None, 784], dtype=tf.float32)
-        # self.b = tf.Variable(tf.random_normal(shape=[1,batch_size]))
-        self.b = tf.Variable(tf.zeros(shape=[1,batch_size]))
+        self.b = tf.Variable(tf.zeros(shape=[1,batch_size]), constraint=lambda x: tf.clip_by_value(x, 0, C))
         self.gamma = tf.constant(1, dtype=tf.float32)
-        half = tf.constant(0.1, dtype=tf.float32)
+        constant = tf.constant(0.1, dtype=tf.float32)
 
         self.my_kernel = Model._linear_kernel(self.x_input) if kernel_name == "linear" else Model._gaussian_kernel(self.x_input, self.gamma)
 
@@ -30,11 +30,12 @@ class Model(object):
         self.first_term = tf.reduce_sum(self.b)
         self.b_vec_cross = tf.matmul(tf.transpose(self.b), self.b)
         self.y_target_cross = tf.matmul(self.y_input, tf.transpose(self.y_input))
-        self.second_term = tf.multiply(half, tf.reduce_sum(tf.multiply(self.my_kernel, tf.multiply(self.b_vec_cross, self.y_target_cross))))
-        self.loss = tf.negative(tf.subtract(self.first_term, self.second_term))
+        self.second_term = tf.multiply(constant, tf.reduce_sum(tf.multiply(self.my_kernel, tf.multiply(self.b_vec_cross, self.y_target_cross))))
+        self.loss = tf.subtract(self.second_term, self.first_term) # This is the negative of the dual problem in order to minimize
 
         self.pred_kernel = Model._linear_pred_kernel(self.x_input, self.prediction_grid) if kernel_name == "linear" else Model._gaussian_pred_kernel(self.x_input, self.prediction_grid, self.gamma)
 
+        # Output stuff
         prediction_output = tf.matmul(tf.multiply(tf.transpose(self.y_input),self.b),self.pred_kernel)
         self.prediction = tf.sign(prediction_output-tf.reduce_mean(prediction_output))
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.squeeze(self.prediction),tf.squeeze(self.y_input)), tf.float32))
