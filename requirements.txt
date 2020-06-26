@@ -1,0 +1,11 @@
+matplotlib==3.2.1
+numpy==1.18.5
+scipy==1.4.1
+tensorboard==2.2.2
+tensorboard-plugin-wit==1.6.0.post3
+tensorflow==2.2.0
+tensorflow-datasets==3.1.0
+tensorflow-estimator==2.2.0
+tensorflow-examples===9df519c1be220d11c5d730c637b5e31d0b90e134-
+tensorflow-metadata==0.22.1
+sklearn==0.0
