@@ -6,8 +6,9 @@
   "_comment": "===== TRAINING CONFIGURATION =====",
   "random_seed": 4557077,
   "training_batch_size": 50,
-  "learning_rate": 0.0001,
-  "adv_training": true,
+  "learning_rate": 0.01,
+  "adv_training": false,
+  "mixed_dataset": true,
 
   "_comment": "===== EVAL CONFIGURATION =====",
   "num_eval_examples": 2000,
@@ -18,7 +19,7 @@
   "_comment": "=====ADVERSARIAL EXAMPLES CONFIGURATION=====",
   "epsilon": 0.5,
   "k": 500,
-  "a": 0.003,
+  "a": 0.0016,
   "random_start": true,
   "loss_func": "xent",
   "store_adv_path": "attack.npy"

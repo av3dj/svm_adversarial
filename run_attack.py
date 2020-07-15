@@ -20,10 +20,10 @@ import numpy as np
 
 from model import Model
 
-def run_attack(checkpoint, x_adv, epsilon, adv_testing=False):
+def run_attack(checkpoint, x_adv, epsilon, adv_testing=False, mixed_dataset=False):
 
   # Get dataset
-  (mnist_train_x, mnist_train_y, mnist_test_x, mnist_test_y) = prepare_mnist()
+  (mnist_train_x, mnist_train_y, mnist_test_x, mnist_test_y) = prepare_mnist(mixed=mixed_dataset)
 
   num_eval_examples = 2000
   eval_batch_size = 2000 # If changing this make sure to change this elsewhere
@@ -38,7 +38,7 @@ def run_attack(checkpoint, x_adv, epsilon, adv_testing=False):
   l_inf = np.amax(np.abs(mnist_test_x[0:num_eval_examples] - x_adv))
   
   # Check constraints
-  if l_inf > epsilon + 0.0001:
+  if l_inf > epsilon + 0.0001 and not mixed_dataset:
     print('maximum perturbation found: {}'.format(l_inf))
     print('maximum perturbation allowed: {}'.format(epsilon))
     return
@@ -114,4 +114,4 @@ if __name__ == '__main__':
                                                               np.amin(x_adv),
                                                               np.amax(x_adv)))
   else:
-    run_attack(checkpoint, x_adv, config['epsilon'], config['adv_testing'])
+    run_attack(checkpoint, x_adv, config['epsilon'], config['adv_testing'], config['mixed_dataset'])

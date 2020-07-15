@@ -36,13 +36,15 @@ if not os.path.exists(model_dir):
   os.makedirs(model_dir)
 
 # Acquire mnist dataset (only 1s and 7s)
-(mnist_train_x, mnist_train_y, mnist_test_x, mnist_test_y) = prepare_mnist()
+print("getting dataset")
+(mnist_train_x, mnist_train_y, mnist_test_x, mnist_test_y) = prepare_mnist(mixed=config['mixed_dataset'])
+print("got dataset")
 
 x_vals = mnist_train_x
 y_vals = mnist_train_y
 
 # Set batch size (currently SVM only allows data that matches this batch size (can't feed smaller or larger) ??? potential fix somehow)
-batch_size = 2000 #2163 Increasing batch size requires adjustment of C value
+batch_size = 2000#2163 Increasing batch size requires adjustment of C value
 
 # Setup model and adversary
 svm_model = Model(batch_size, C=0.01)
@@ -93,7 +95,7 @@ for i in range(100):
   acc_temp = sess.run(svm_model.accuracy, feed_dict={svm_model.x_input: X, svm_model.y_input: Y, svm_model.prediction_grid: X})
   batch_accuracy.append(acc_temp)
 
-  if (i+1)%10==0:
+  if (i+1)%1==0:
     print('Loss = ' + str(temp_loss))
     print('Natural Accuracy = ' + str(acc_temp))
     print('Step #' + str(i+1))

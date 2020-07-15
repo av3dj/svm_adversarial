@@ -67,12 +67,12 @@ if __name__ == '__main__':
   import math
   from preprocess import prepare_mnist
 
-  (mnist_train_x, mnist_train_y, mnist_test_x, mnist_test_y) = prepare_mnist()
-
-  from model import Model
-
   with open('config.json') as config_file:
     config = json.load(config_file)
+
+  (mnist_train_x, mnist_train_y, mnist_test_x, mnist_test_y) = prepare_mnist(mixed=config['mixed_dataset'])
+
+  from model import Model
   
   tf.set_random_seed(config['random_seed'])
   np.random.seed(config['random_seed'])

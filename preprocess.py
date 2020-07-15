@@ -3,7 +3,12 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
 # Return mnist data with only 1's and 7's as tensor
-def prepare_mnist():
+def prepare_mnist(mixed=False):
+
+  if mixed:
+    mnist = np.load('mnist_17_attack_clean-centroid_normc-0.8_epsilon-0.3.npz', allow_pickle=True)
+    
+    return (mnist['X_modified'], mnist['Y_modified'], mnist['X_test'], mnist['Y_test'])
 
   mnist = tf.keras.datasets.mnist.load_data(path="mnist.npz")
 
