@@ -21,7 +21,7 @@ class Model(object):
         self.prediction_grid = tf.placeholder(shape=[None, 784], dtype=tf.float32)
         self.b = tf.Variable(tf.zeros(shape=[1,batch_size]), constraint=lambda x: tf.clip_by_value(x, 0, C))
         self.gamma = tf.constant(1, dtype=tf.float32)
-        constant = tf.constant(0.1, dtype=tf.float32)
+        constant = tf.constant(0.5, dtype=tf.float32)
 
         self.my_kernel = Model._linear_kernel(self.x_input) if kernel_name == "linear" else Model._gaussian_kernel(self.x_input, self.gamma)
 

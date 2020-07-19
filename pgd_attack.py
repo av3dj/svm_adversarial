@@ -7,10 +7,20 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from tensorflow.python import pywrap_tensorflow
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
+from tensorflow.keras.backend import clear_session
 import numpy as np
 from scipy import stats
+
+import json
+import sys
+import math
+from preprocess import prepare_mnist
+from model import Model
 
 # Test
 # - attack the normally trained model using the PGD attack
@@ -60,36 +70,39 @@ class LinfPGDAttack(object):
 
     return x
 
-
-if __name__ == '__main__':
-  import json
-  import sys
-  import math
-  from preprocess import prepare_mnist
-
-  with open('config.json') as config_file:
-    config = json.load(config_file)
-
-  (mnist_train_x, mnist_train_y, mnist_test_x, mnist_test_y) = prepare_mnist(mixed=config['mixed_dataset'])
-
-  from model import Model
+def create_attack(dataset, config, adversarial, mixed):
+  clear_session()
   
+  # Set seeds
   tf.set_random_seed(config['random_seed'])
   np.random.seed(config['random_seed'])
 
+  # Extract dataset
+  mnist_test_x = dataset['X_test']
+  mnist_test_y = dataset['Y_test']
+
+  # Load model
   model_file = None
-  if config['adv_training']:
-    model_file = tf.train.latest_checkpoint(config['model_dir_adv'])
+  if adversarial:
+    if mixed:
+      model_file = tf.train.latest_checkpoint(config['model_dir_adv_mixed'])
+    else:
+      model_file = tf.train.latest_checkpoint(config['model_dir_adv'])
   else:
-    model_file = tf.train.latest_checkpoint(config['model_dir'])
+    if mixed:
+      model_file = tf.train.latest_checkpoint(config['model_dir_mixed'])
+    else:
+      model_file = tf.train.latest_checkpoint(config['model_dir'])
   if model_file is None:
     print('No model found')
     sys.exit()
 
+  # Set Parameters
   num_eval_examples = config['num_eval_examples']
   eval_batch_size = config['eval_batch_size']
   num_batches = int(math.ceil(num_eval_examples / eval_batch_size))
 
+  # Get tensorflow objects
   model = Model(batch_size=eval_batch_size)
   attack = LinfPGDAttack(model,
                          config['epsilon'],
@@ -107,15 +120,11 @@ if __name__ == '__main__':
 
     x_adv = [] # adv accumulator
 
-    print('Iterating over {} batches'.format(num_batches))
-
     for ibatch in range(num_batches):
-      print(ibatch)
       bstart = ibatch * eval_batch_size
       if bstart == 2000:
         break
       bend = min(bstart + eval_batch_size, num_eval_examples)
-      print('batch size: {}'.format(bend - bstart))
 
       x_batch = mnist_test_x[bstart:bend, :]
       y_batch = np.transpose([mnist_test_y[bstart:bend]])
@@ -124,8 +133,87 @@ if __name__ == '__main__':
 
       x_adv.append(x_batch_adv)
 
-    print('Storing examples')
-    path = config['store_adv_path']
+    path = ""
+    if adversarial:
+      if mixed:
+        path = "attack-adv-mixed.npy"
+      else:
+        path = "attack-adv.npy"
+    else:
+      if mixed:
+        path = "attack-normal-mixed.npy"
+      else:
+        path = "attack-normal.npy"
     x_adv = np.concatenate(x_adv, axis=0)
     np.save(path, x_adv)
-    print('Examples stored in {}'.format(path))
+
+
+
+# if __name__ == '__main__':
+#   import json
+#   import sys
+#   import math
+#   from preprocess import prepare_mnist
+
+#   with open('config.json') as config_file:
+#     config = json.load(config_file)
+
+#   (mnist_train_x, mnist_train_y, mnist_test_x, mnist_test_y) = prepare_mnist(mixed=config['mixed_dataset'])
+
+#   from model import Model
+  
+#   tf.set_random_seed(config['random_seed'])
+#   np.random.seed(config['random_seed'])
+
+#   model_file = None
+#   if config['adv_training']:
+#     model_file = tf.train.latest_checkpoint(config['model_dir_adv'])
+#   else:
+#     model_file = tf.train.latest_checkpoint(config['model_dir'])
+#   if model_file is None:
+#     print('No model found')
+#     sys.exit()
+
+#   num_eval_examples = config['num_eval_examples']
+#   eval_batch_size = config['eval_batch_size']
+#   num_batches = int(math.ceil(num_eval_examples / eval_batch_size))
+
+#   model = Model(batch_size=eval_batch_size)
+#   attack = LinfPGDAttack(model,
+#                          config['epsilon'],
+#                          config['k'],
+#                          config['a'],
+#                          config['random_start'],
+#                          config['loss_func'])
+#   saver = tf.train.Saver()
+
+#   with tf.Session() as sess:
+#     # Restore the checkpoint
+#     saver.restore(sess, model_file)
+
+#     # Iterate over the samples batch-by-batch
+
+#     x_adv = [] # adv accumulator
+
+#     print('Iterating over {} batches'.format(num_batches))
+
+#     for ibatch in range(num_batches):
+#       print(ibatch)
+#       bstart = ibatch * eval_batch_size
+#       if bstart == 2000:
+#         break
+#       bend = min(bstart + eval_batch_size, num_eval_examples)
+#       print('batch size: {}'.format(bend - bstart))
+
+#       x_batch = mnist_test_x[bstart:bend, :]
+#       y_batch = np.transpose([mnist_test_y[bstart:bend]])
+
+#       x_batch_adv = attack.perturb(x_batch, y_batch, sess)
+
+#       x_adv.append(x_batch_adv)
+
+#     print('Storing examples')
+#     path = config['store_adv_path']
+#     x_adv = np.concatenate(x_adv, axis=0)
+#     np.save(path, x_adv)
+#     print('Examples stored in {}'.format(path))

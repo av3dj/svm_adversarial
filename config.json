@@ -1,12 +1,15 @@
 {
   "_comment": "===== MODEL CONFIGURATION =====",
-  "model_dir": "models/svm",
-  "model_dir_adv": "models/svm/adv",
+  "model_dir": "models/svm/normal",
+  "model_dir_adv": "models/svm/normal/adv",
+  "model_dir_mixed": "models/svm/mixed",
+  "model_dir_adv_mixed": "models/svm/mixed/adv",
 
   "_comment": "===== TRAINING CONFIGURATION =====",
   "random_seed": 4557077,
-  "training_batch_size": 50,
-  "learning_rate": 0.01,
+  "batch_size": 2000,
+  "C": 0.01,
+  "learning_rate": 0.0001,
   "adv_training": false,
   "mixed_dataset": true,
 
@@ -18,9 +21,9 @@
 
   "_comment": "=====ADVERSARIAL EXAMPLES CONFIGURATION=====",
   "epsilon": 0.5,
-  "k": 500,
-  "a": 0.0016,
-  "random_start": true,
+  "k": 5000,
+  "a": 0.0002,
+  "random_start": true, 
   "loss_func": "xent",
   "store_adv_path": "attack.npy"
 }
