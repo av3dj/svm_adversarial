@@ -67,7 +67,9 @@ def train_model(dataset, config, adversarial, mixed):
                        config['k'],
                        config['a'],
                        config['random_start'],
-                       config['loss_func'])
+                       config['loss_func'],
+                       config['beta'],
+                       config['random_seed'])
 
   # Set optimizer for model training 
   my_opt = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)

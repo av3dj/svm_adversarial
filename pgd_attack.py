@@ -31,7 +31,7 @@ from model import Model
 #   - For attack strength, set the epsilon value to be 0.3, for image pixels scaled in [0,1] range
 
 class LinfPGDAttack(object):
-  def __init__(self, model, epsilon, k, a, random_start, loss_func):
+  def __init__(self, model, epsilon, k, a, random_start, loss_func, beta, random_seed):
     """Attack parameter initialization. The attack performs k steps of
        size a, while always staying within epsilon from the initial
        point."""
@@ -40,6 +40,12 @@ class LinfPGDAttack(object):
     self.k = k # Number of iterations for perturb loop
     self.a = a # Step size for each perturb
     self.rand = random_start # Add random noise to each image
+
+    tf.set_random_seed(random_seed)
+    np.random.seed(random_seed)
+
+    self.beta = beta
+    self.V = 0 # Velocity for momentum
 
     loss = model.loss
 
@@ -61,7 +67,12 @@ class LinfPGDAttack(object):
       
       sign = np.sign(grad)
 
-      perturbation = self.a * sign
+      if i == 0: # init velocity # if instable try implementing bias-corrected version
+        self.V = (1-self.beta) * sign
+      else:
+        self.V = self.beta * self.V + (1-self.beta) * sign
+
+      perturbation = self.a * self.V
       
       x -= perturbation # SVM version is subtracting because loss funciton is in negative form
 
@@ -109,7 +120,9 @@ def create_attack(dataset, config, adversarial, mixed):
                          config['k'],
                          config['a'],
                          config['random_start'],
-                         config['loss_func'])
+                         config['loss_func'],
+                         config['beta'],
+                         config['random_seed'])
   saver = tf.train.Saver()
 
   with tf.Session() as sess:
