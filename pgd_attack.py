@@ -64,15 +64,15 @@ class LinfPGDAttack(object):
     for i in range(self.k):
       grad = sess.run(self.grad, feed_dict={self.model.x_input: x,
                                             self.model.y_input: y})
-      
-      sign = np.sign(grad)
 
       if i == 0: # init velocity # if instable try implementing bias-corrected version
-        self.V = (1-self.beta) * sign
+        self.V = (1-self.beta) * grad
       else:
-        self.V = self.beta * self.V + (1-self.beta) * sign
+        self.V = self.beta * self.V + (1-self.beta) * grad
 
-      perturbation = self.a * self.V
+      sign = np.sign(self.V)
+
+      perturbation = self.a * sign
       
       x -= perturbation # SVM version is subtracting because loss funciton is in negative form
 
