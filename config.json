@@ -10,21 +10,15 @@
   "batch_size": 2000,
   "C": 0.01,
   "learning_rate": 0.0001,
-  "adv_training": false,
-  "mixed_dataset": true,
 
   "_comment": "===== EVAL CONFIGURATION =====",
   "num_eval_examples": 2000,
   "eval_batch_size": 2000,
-  "eval_on_cpu": true,
-  "adv_testing": true,
 
   "_comment": "=====ADVERSARIAL EXAMPLES CONFIGURATION=====",
   "epsilon": 0.5,
-  "k": 500,
+  "k": 250,
   "a": 0.001,
   "beta": 0.9,
-  "random_start": false, 
-  "loss_func": "xent",
-  "store_adv_path": "attack.npy"
+  "random_start": false
 }
