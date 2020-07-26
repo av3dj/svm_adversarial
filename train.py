@@ -67,6 +67,7 @@ def train_model(dataset, config, adversarial, mixed):
                        config['k'],
                        config['a'],
                        config['random_start'],
+                       config['momentum'],
                        config['beta'],
                        config['random_seed'])
 

@@ -16,6 +16,7 @@
   "eval_batch_size": 2000,
 
   "_comment": "=====ADVERSARIAL EXAMPLES CONFIGURATION=====",
+  "momentum": false,
   "epsilon": 0.5,
   "k": 250,
   "a": 0.001,

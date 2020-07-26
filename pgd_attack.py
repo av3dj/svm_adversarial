@@ -31,7 +31,7 @@ from model import Model
 #   - For attack strength, set the epsilon value to be 0.3, for image pixels scaled in [0,1] range
 
 class LinfPGDAttack(object):
-  def __init__(self, model, epsilon, k, a, random_start, beta, random_seed):
+  def __init__(self, model, epsilon, k, a, random_start, momentum, beta, random_seed):
     """Attack parameter initialization. The attack performs k steps of
        size a, while always staying within epsilon from the initial
        point."""
@@ -40,6 +40,7 @@ class LinfPGDAttack(object):
     self.k = k # Number of iterations for perturb loop
     self.a = a # Step size for each perturb
     self.rand = random_start # Add random noise to each image
+    self.momentum = momentum
 
     tf.set_random_seed(random_seed)
     np.random.seed(random_seed)
@@ -65,14 +66,17 @@ class LinfPGDAttack(object):
       grad = sess.run(self.grad, feed_dict={self.model.x_input: x,
                                             self.model.y_input: y})
 
-      if i == 0: # init velocity # if instable try implementing bias-corrected version
-        self.V = (1-self.beta) * grad
-      else:
-        self.V = self.beta * self.V + (1-self.beta) * grad
+      gradient = grad
 
-      V_unbiased = self.V
+      if self.momentum:
+        if i == 0: # init velocity # if instable try implementing bias-corrected version
+          self.V = (1-self.beta) * grad
+        else:
+          self.V = self.beta * self.V + (1-self.beta) * grad
 
-      sign = np.sign(V_unbiased)
+        gradient = self.V
+
+      sign = np.sign(gradient)
 
       # if i % 10 == 0:
       #   print(stats.describe(self.V[0]))
@@ -126,6 +130,7 @@ def create_attack(dataset, config, adversarial, mixed):
                          config['k'],
                          config['a'],
                          config['random_start'],
+                         config['momentum'],
                          config['beta'],
                          config['random_seed'])
   saver = tf.train.Saver()
