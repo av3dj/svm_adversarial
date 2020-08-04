@@ -55,7 +55,9 @@ def train_model(dataset, config, adversarial, mixed):
 
   # Get parameters
   batch_size = config['batch_size']
-  C = config['C']
+  weight_decay = config['weight_decay']
+  C = 1.0 / ( batch_size * weight_decay )
+  # C = config['C']
   learning_rate = config['learning_rate']
 
   # Setup tensorflow objects

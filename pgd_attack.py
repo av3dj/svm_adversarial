@@ -78,9 +78,10 @@ class LinfPGDAttack(object):
 
       sign = np.sign(gradient)
 
-      # if i % 10 == 0:
-      #   print(stats.describe(self.V[0]))
-      #   print(stats.describe(sign[0]))
+      # if i % 200 == 0:
+      #   # print(gradient)
+      #   print(stats.describe(gradient))
+      #   # print(stats.describe(sign[0]))
 
       perturbation = self.a * sign
       
