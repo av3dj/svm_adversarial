@@ -48,11 +48,11 @@ class LinfPGDAttack(object):
     self.beta = beta
     self.V = 0 # Velocity 
 
-    loss = model.loss
+    self.loss = model.loss
 
-    self.grad = tf.gradients(loss, model.x_input)[0]
+    self.grad = tf.gradients(self.loss, model.x_input)[0]
 
-  def perturb(self, x_nat, y, sess):
+  def perturb(self, x_nat, y, sess, train_debug=False):
     """Given a set of examples (x_nat, y), returns a set of adversarial
        examples within epsilon of x_nat in l_infinity norm."""
     if self.rand:
@@ -78,10 +78,12 @@ class LinfPGDAttack(object):
 
       sign = np.sign(gradient)
 
-      # if i % 200 == 0:
-      #   # print(gradient)
-      #   print(stats.describe(gradient))
-      #   # print(stats.describe(sign[0]))
+      if train_debug and i % 50 == 0:
+        # print(gradient)
+        # print(stats.describe(gradient))
+        print(stats.describe(sign[0]))
+        # test_loss = sess.run(self.loss, feed_dict={self.model.x_input: x, self.model.y_input: y})
+        # print(test_loss)
 
       perturbation = self.a * sign
       
@@ -153,7 +155,7 @@ def create_attack(dataset, config, adversarial, mixed):
       x_batch = mnist_test_x[bstart:bend, :]
       y_batch = np.transpose([mnist_test_y[bstart:bend]])
 
-      x_batch_adv = attack.perturb(x_batch, y_batch, sess)
+      x_batch_adv = attack.perturb(x_batch, y_batch, sess, train_debug=False)
 
       x_adv.append(x_batch_adv)
 

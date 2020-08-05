@@ -4,6 +4,7 @@
   "model_dir_adv": "models/svm/normal/adv",
   "model_dir_mixed": "models/svm/mixed",
   "model_dir_adv_mixed": "models/svm/mixed/adv",
+  "train_history_dir": "history/",
 
   "_comment": "===== TRAINING CONFIGURATION =====",
   "random_seed": 4557077,

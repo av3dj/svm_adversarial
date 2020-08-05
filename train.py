@@ -82,12 +82,19 @@ def train_model(dataset, config, adversarial, mixed):
   X = None
   Y = None
 
+  clean_loss_history = []
+  clean_accuracy_history = []
+  robust_loss_history = []
+  robust_accuracy_history = []
+
+  train_history = {}
+
   # Start tensorflow session
   with tf.Session() as sess:
     sess.run(init)
 
     # Training: Batch Gradient Descent
-    for i in range(100):
+    for i in range(100): # Orig: 100
 
       # Create randomly selected batch
       rand_index = np.random.choice(len(x_vals), size=batch_size)
@@ -96,18 +103,33 @@ def train_model(dataset, config, adversarial, mixed):
 
       # In case of adversarial training we perturb the batch data
       X_adv = None
-      if adversarial:
+      if adversarial or True:
         X_adv = attack.perturb(X, Y, sess)
 
       # Storing batch set performance
-      temp_loss = sess.run(svm_model.loss, feed_dict={svm_model.x_input: X, svm_model.y_input: Y})
+      clean_loss = sess.run(svm_model.loss, feed_dict={svm_model.x_input: X, svm_model.y_input: Y})
+      clean_acc = sess.run(svm_model.accuracy, feed_dict={svm_model.x_input: X, svm_model.y_input: Y, svm_model.prediction_grid: X})
 
-      acc_temp = sess.run(svm_model.accuracy, feed_dict={svm_model.x_input: X, svm_model.y_input: Y, svm_model.prediction_grid: X})
+      robust_loss = 0
+      robust_acc = 0
+
+      if adversarial or True:
+        robust_loss = sess.run(svm_model.loss, feed_dict={svm_model.x_input: X_adv, svm_model.y_input: Y})
+        robust_acc = sess.run(svm_model.accuracy, feed_dict={svm_model.x_input: X_adv, svm_model.y_input: Y, svm_model.prediction_grid: X_adv})
 
       if (i+1)%1==0:
         print('\nStep #' + str(i+1))
-        print('Loss = ' + str(temp_loss))
-        print('Natural Accuracy = ' + str(acc_temp))
+        print('Clean Loss = ' + str(clean_loss))
+        print('Clean Accuracy = ' + str(clean_acc))
+        if adversarial or True:
+          print('Robust Loss = ' + str(robust_loss))
+          print('Robust Accuracy = ' + str(robust_acc))
+
+      clean_loss_history.append(str(clean_loss[0][0]))
+      clean_accuracy_history.append(str(clean_acc))
+      if adversarial or True:
+        robust_loss_history.append(str(robust_loss[0][0]))
+        robust_accuracy_history.append(str(robust_acc))
 
       # Train model
       if adversarial:
@@ -136,7 +158,13 @@ def train_model(dataset, config, adversarial, mixed):
         saver.save(sess,
                       os.path.join(config['model_dir'], 'model_' + 'batch-size-' + str(config['batch_size']) + '_C-' + str(config['C']) + '_learning-rate-' + str(config['learning_rate'])),
                       global_step=global_step)
+  
+  train_history['clean loss'] = clean_loss_history
+  train_history['clean accuracy'] = clean_accuracy_history
+  train_history['robust loss'] = robust_loss_history
+  train_history['robust accuracy'] = robust_accuracy_history
 
+  return train_history
 
 # with open('config.json') as config_file:
 #     config = json.load(config_file)
