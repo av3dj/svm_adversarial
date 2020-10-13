@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import sklearn
 import numpy as np
 import json
+import pickle
 
 class GaussianDistributionGenerator():
 
@@ -21,7 +22,7 @@ class GaussianDistributionGenerator():
 
     """
 
-    def __init__(self, mu, sigma, test_size, seed=None):
+    def __init__(self, mu, sigma, test_ratio, dim=2, seed=None):
 
         if not seed:
             with open('config.json') as f:
@@ -30,9 +31,10 @@ class GaussianDistributionGenerator():
         else:
             self.seed = seed
 
-        self.test_size = test_size
+        self.test_ratio = test_ratio
         self.mu = mu
         self.sigma = sigma
+        self.dim = dim
 
     def generate(self, sample_size=10000):
 
@@ -41,8 +43,8 @@ class GaussianDistributionGenerator():
         
         np.random.seed(seed=self.seed)
 
-        cov_matrix = np.diag([self.sigma**2, self.sigma**2])
-        mu_matrix = np.asarray([self.mu, self.mu])
+        cov_matrix = np.diag([self.sigma**2 for i in range(self.dim)])
+        mu_matrix = np.asarray([self.mu for i in range(self.dim)])
 
         Y_neg_sample_size = int(sample_size/2)
         Y_pos_sample_size = sample_size - Y_neg_sample_size
@@ -59,7 +61,7 @@ class GaussianDistributionGenerator():
         X = np.concatenate((X_neg, X_pos), axis=0)
         Y = np.concatenate((Y_neg, Y_pos), axis=0)
 
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=self.test_size, random_state=self.seed)
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=self.test_ratio, random_state=self.seed)
 
         dataset = {
             'X_train': X_train,
@@ -70,10 +72,15 @@ class GaussianDistributionGenerator():
 
         return dataset
 
-    def plot(self, X, y):
+    def plot2d(self, X, y, X_orig, Y_orig):
         axes = [-10, 10, -10, 10]
-        plt.plot(X[:, 0][y==-1], X[:, 1][y==-1], "bs", markersize=0.5)
-        plt.plot(X[:, 0][y==1], X[:, 1][y==1], "g^", markersize=0.5)
-        plt.axis(axes)
+        plt.plot(X[:, 0][y==-1], X[:, 1][y==-1], "bs", X[:, 0][y==1], X[:, 1][y==1], "g^", X_orig[:, 0][Y_orig==-1], X_orig[:, 1][Y_orig==-1], 'r1', X_orig[:, 0][Y_orig==1], X_orig[:, 1][Y_orig==1], 'k+', markersize=0.5)
+        plt.plot(X_orig[:, 0][Y_orig==-1], X_orig[:, 1][Y_orig==-1], 'r1', X_orig[:, 0][Y_orig==1], X_orig[:, 1][Y_orig==1], 'k+', markersize=3)
         plt.grid(True, which='both')
         plt.show()
+
+
+gdg = GaussianDistributionGenerator(mu=1, sigma=0.4, dim=2, test_ratio=0.2)
+dataset = gdg.generate()
+with open('gaussian_train_test.npz', 'wb') as f:
+    pickle.dump(dataset, f, protocol=2)
