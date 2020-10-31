@@ -13,6 +13,10 @@ tf.disable_v2_behavior()
 class Model(object):
     def __init__(self, batch_size, kernel_name="linear", C=1):
 
+        '''
+
+        # Mnist version Linear Model
+
         # self.x_input = tf.placeholder(shape=[None, 784], dtype=tf.float32)
         # self.y_input = tf.placeholder(shape=[None, 1], dtype=tf.float32)
         # self.prediction_grid = tf.placeholder(shape=[None, 784], dtype=tf.float32)
@@ -33,26 +37,34 @@ class Model(object):
         # self.prediction = tf.sign(self.model_output)
         # self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.prediction, self.y_input), dtype=tf.float32))
 
+        '''
+        
+        # 2D Gaussian version of model
 
-        self.x_input = tf.placeholder(shape=[None, 784], dtype=tf.float32)
+        # Inputs
+        self.x_input = tf.placeholder(shape=[None, 2], dtype=tf.float32)
         self.y_input = tf.placeholder(shape=[None, 1], dtype=tf.float32)
-        self.prediction_grid = tf.placeholder(shape=[None, 784], dtype=tf.float32)
 
-        self.A = tf.Variable(tf.zeros(shape=[784,1]))
+        self.prediction_grid = tf.placeholder(shape=[None, 2], dtype=tf.float32)
+
+        # Variable
+        self.A = tf.Variable(tf.zeros(shape=[2,1]))
         self.b = tf.Variable(tf.zeros(shape=[1,1]))
+        # When using rand. init. make sure C = C/2
+        # self.A = tf.Variable(tf.random.uniform(shape=[2,1], seed=12))
+        # self.b = tf.Variable(tf.random.uniform(shape=[1,1], seed=12))
 
+        # Prediction
         self.model_output = tf.subtract(tf.matmul(self.x_input, self.A), self.b)
 
-        half = tf.constant(1.0, dtype=tf.float32)
-
+        # Loss function values
+        half = tf.constant(1, dtype=tf.float32)
         regularizer = tf.multiply(half, tf.matmul(tf.transpose(self.A), self.A))
-
         self.C = tf.constant(C/batch_size, dtype=tf.float32)
-
         classification_term = tf.multiply(self.C, tf.reduce_sum(tf.maximum(0., tf.subtract(1., tf.multiply(self.y_input, self.model_output)))))
         
+        # Outputs calculated using the inputs
         self.loss = tf.add(classification_term, regularizer)
-
         self.prediction = tf.sign(self.model_output)
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.prediction, self.y_input), dtype=tf.float32))
 

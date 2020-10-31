@@ -43,11 +43,11 @@ def run_attack(checkpoint, dataset, x_adv, config, adv_testing=False, mixed_data
 
   l_inf = np.amax(np.abs(mnist_test_x[0:num_eval_examples] - x_adv))
   
-  # Check constraints
-  if l_inf > config['epsilon'] + 0.0001 and not mixed_dataset:
-    print('maximum perturbation found: {}'.format(l_inf))
-    print('maximum perturbation allowed: {}'.format(config['epsilon']))
-    return
+  # Check constraints (removed for gaussian?)
+  # if l_inf > config['epsilon'] + 0.0001 and not mixed_dataset:
+  #   print('maximum perturbation found: {}'.format(l_inf))
+  #   print('maximum perturbation allowed: {}'.format(config['epsilon']))
+  #   return
 
   with tf.Session() as sess:
 
@@ -132,49 +132,16 @@ def check_and_run_attack(dataset, config, adversarial, mixed):
 
   if model_file is None:
     print('No checkpoint found')
-  elif x_adv.shape != (2000, 784):
-    print('Invalid shape: expected (10000,784), found {}'.format(x_adv.shape))
-  elif np.amax(x_adv) > 1.0001 or \
-       np.amin(x_adv) < -0.0001 or \
-       np.isnan(np.amax(x_adv)):
-    print('Invalid pixel range. Expected [0, 1], found [{}, {}]'.format(
-                                                              np.amin(x_adv),
-                                                              np.amax(x_adv)))
+  # elif x_adv.shape != (2000, 3):
+  #   print('Invalid shape: expected (10000,784), found {}'.format(x_adv.shape))
+  # elif np.amax(x_adv) > 1.0001 or \
+  #      np.amin(x_adv) < -0.0001 or \
+  #      np.isnan(np.amax(x_adv)):
+  #   print('Invalid pixel range. Expected [0, 1], found [{}, {}]'.format(
+  #                                                             np.amin(x_adv),
+  #                                                             np.amax(x_adv)))
   else:
     clean_acc = run_attack(model_file, dataset, x_adv, config, adv_testing=False, mixed_dataset=mixed)
     robust_acc = run_attack(model_file, dataset, x_adv, config, adv_testing=True, mixed_dataset=mixed)
 
   return (clean_acc, robust_acc)
-
-# if __name__ == '__main__':
-#   import json
-
-#   with open('config.json') as config_file:
-#     config = json.load(config_file)
-  
-#   tf.set_random_seed(config['random_seed'])
-#   np.random.seed(config['random_seed'])
-
-#   checkpoint = None
-#   if config['adv_training']:
-#     checkpoint = tf.train.latest_checkpoint(config['model_dir_adv'])
-#   else:
-#     checkpoint = tf.train.latest_checkpoint(config['model_dir'])
-#   if checkpoint is None:
-#     print('No model found')
-#     sys.exit()
-
-#   x_adv = np.load(config['store_adv_path'])
-
-#   if checkpoint is None:
-#     print('No checkpoint found')
-#   elif x_adv.shape != (2000, 784):
-#     print('Invalid shape: expected (10000,784), found {}'.format(x_adv.shape))
-#   elif np.amax(x_adv) > 1.0001 or \
-#        np.amin(x_adv) < -0.0001 or \
-#        np.isnan(np.amax(x_adv)):
-#     print('Invalid pixel range. Expected [0, 1], found [{}, {}]'.format(
-#                                                               np.amin(x_adv),
-#                                                               np.amax(x_adv)))
-#   else:
-#     run_attack(checkpoint, x_adv, config['epsilon'], config['adv_testing'], config['mixed_dataset'])

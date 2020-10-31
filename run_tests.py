@@ -24,12 +24,17 @@ from pgd_attack import create_attack
 from preprocess import prepare_mnist
 from train import train_model
 from run_attack import check_and_run_attack
+from plot_with_decision_boundary import Plotter
+
+import pickle
 
 with open('config.json') as config_file:
     config = json.load(config_file)
 
 mnist_regular = prepare_mnist(mixed=False)
 mnist_mixed = prepare_mnist(mixed=True)
+
+plotter = Plotter()
 
 """
 Train (normal, normal w/mixed, adv, adv w/mixed)
@@ -41,49 +46,53 @@ Train (normal, normal w/mixed, adv, adv w/mixed)
 # print("=                               Training Normal SVM model                               =")
 # print("=========================================================================================\n")
 # t0 = time.time()
-# history = train_model(mnist_regular, config, False, False)
+# history = train_model(mnist_regular, config, plotter, False, False)
 # t1 = time.time()
 # history['title'] = 'Normal SVM with Normal Dataset'
-# with open(config['train_history_dir'] + 'normal.json', 'w') as f:
-#     f.write(json.dumps(history))
+# with open(config['train_history_dir'] + 'normal.json', 'wb') as f:
+#     pickle.dump(history, f, protocol=2)
+#     # json.dump(history, f)
 # print("\nRunning Time: " + str(t1-t0) + " seconds\n")
 
 # print("\n=========================================================================================")
 # print("=                       Training Normal SVM model w/ Mixed Dataset                      =")
 # print("=========================================================================================\n")
 # t0 = time.time()
-# history = train_model(mnist_mixed, config, False, True)
+# history = train_model(mnist_mixed, config, plotter, False, True)
 # t1 = time.time()
 # history['title'] = 'Normal SVM with Mixed Dataset'
-# with open(config['train_history_dir'] + 'normal_mixed.json', 'w') as f:
-#     f.write(json.dumps(history))
+# with open(config['train_history_dir'] + 'normal_mixed.json', 'wb') as f:
+#     pickle.dump(history, f, protocol=2)
+#     # json.dump(history, f)
+# print("\nRunning Time: " + str(t1-t0) + " seconds\n")
+
+print("\n=========================================================================================")
+print("=                               Training Adversarial SVM model                          =")
+print("=========================================================================================\n")
+t0 = time.time()
+history = train_model(mnist_regular, config, plotter, True, False)
+t1 = time.time()
+history['title'] = 'Adversarial SVM with Normal Dataset'
+with open(config['train_history_dir'] + 'adversarial_normal.json', 'wb') as f:
+    pickle.dump(history, f, protocol=2)
+    # json.dump(history, f)
+print("\nRunning Time: " + str(t1-t0) + " seconds\n")
+
+# print("\n=========================================================================================")
+# print("=                       Training Adversarial SVM model w/ Mixed Dataset                 =")
+# print("=========================================================================================\n")
+# t0 = time.time()
+# history = train_model(mnist_mixed, config, plotter, True, True)
+# t1 = time.time()
+# history['title'] = 'Adversarial SVM with Mixed Dataset'
+# with open(config['train_history_dir'] + 'adversarial_mixed.json', 'wb') as f:
+#     pickle.dump(history, f, protocol=2)
+#     # json.dump(history, f)
 # print("\nRunning Time: " + str(t1-t0) + " seconds\n")
 
 # print("\n=========================================================================================")
-# print("=                               Training Adversarial SVM model                          =")
+# print("=                                    Creating Attack                                    =")
 # print("=========================================================================================\n")
-# t0 = time.time()
-# history = train_model(mnist_regular, config, True, False)
-# t1 = time.time()
-# history['title'] = 'Adversarial SVM with Normal Dataset'
-# with open(config['train_history_dir'] + 'adversarial_normal.json', 'w') as f:
-#     f.write(json.dumps(history))
-# print("\nRunning Time: " + str(t1-t0) + " seconds\n")
-
-print("\n=========================================================================================")
-print("=                       Training Adversarial SVM model w/ Mixed Dataset                 =")
-print("=========================================================================================\n")
-t0 = time.time()
-history = train_model(mnist_mixed, config, True, True)
-t1 = time.time()
-history['title'] = 'Adversarial SVM with Mixed Dataset'
-with open(config['train_history_dir'] + 'adversarial_mixed.json', 'w') as f:
-    f.write(json.dumps(history))
-print("\nRunning Time: " + str(t1-t0) + " seconds\n")
-
-print("\n=========================================================================================")
-print("=                                    Creating Attack                                    =")
-print("=========================================================================================\n")
 
 # print("Using Normal SVM Model ... ")
 # t0 = time.time()
@@ -103,15 +112,15 @@ print("=========================================================================
 # t1 = time.time()
 # print("Running Time: " + str(t1-t0) + " seconds\n")
 
-print("Using Adversarial Model w/ Mixed Dataset ... ")
-t0 = time.time()
-create_attack(mnist_mixed, config, True, True)
-t1 = time.time()
-print("Running Time: " + str(t1-t0) + " seconds\n")
+# print("Using Adversarial Model w/ Mixed Dataset ... ")
+# t0 = time.time()
+# create_attack(mnist_mixed, config, True, True)
+# t1 = time.time()
+# print("Running Time: " + str(t1-t0) + " seconds\n")
 
-print("\n=========================================================================================")
-print("=                                     Running Tests                                     =")
-print("=========================================================================================\n")
+# print("\n=========================================================================================")
+# print("=                                     Running Tests                                     =")
+# print("=========================================================================================\n")
 
 # print("Testing Normal SVM Model ... ")
 # t0 = time.time()
@@ -137,13 +146,13 @@ print("=========================================================================
 # print('Robust Accuracy: {:.2f}%'.format(100.0 * robust))
 # print("Running Time: " + str(t1-t0) + " seconds\n")
 
-print("Testing Adversarial Model w/ Mixed Dataset ... ")
-t0 = time.time()
-(clean, robust) = check_and_run_attack(mnist_mixed, config, True, True)
-t1 = time.time()
-print('Clean Accuracy: {:.2f}%'.format(100.0 * clean))
-print('Robust Accuracy: {:.2f}%'.format(100.0 * robust))
-print("Running Time: " + str(t1-t0) + " seconds\n")
+# print("Testing Adversarial Model w/ Mixed Dataset ... ")
+# t0 = time.time()
+# (clean, robust) = check_and_run_attack(mnist_mixed, config, True, True)
+# t1 = time.time()
+# print('Clean Accuracy: {:.2f}%'.format(100.0 * clean))
+# print('Robust Accuracy: {:.2f}%'.format(100.0 * robust))
+# print("Running Time: " + str(t1-t0) + " seconds\n")
 
 
 """
